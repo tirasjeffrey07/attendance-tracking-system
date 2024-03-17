@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+      integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+      crossorigin="anonymous"
+    />
+    <!-- 
+      
+      run npm i xlsx 
+      
+      then find the path where xlsx.full.min.js is located
+
+      <script src="D:/CHRIST/Service Learning Docs/db to html/node_modules/xlsx/dist/xlsx.full.min.js"></script> 
+    
+    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.4/xlsx.full.min.js"></script>
+    <style>
+      /*
+      
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+      
+      */
+
+      @font-face {
+        font-family: notosans;
+        src: url(./font/NotoSans-VariableFont_wdth\,wght.ttf);
+        /* 
+        src: url(./font/NotoSans-VariableFont_wdth\,wght.ttf); there should be a comma after wdth\ 
+        */
+      }
+
+      * {
+        box-sizing: border-box;
+        font-family: notosans, sans-serif;
+        /* font-family: "Noto Sans", sans-serif; */
+      }
+
+      .lightFont {
+        font-weight: 400;
+      }
+      .display-4 {
+        text-align: center;
+        font-weight: 300;
+        margin-bottom: 3rem;
+        margin-top: 3rem;
+      }
+      .title-container {
+        display: flex;
+        justify-content: center;
+      }
+      .title {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 15vh;
+        width: 100%;
+        /* background-color: rgb(128, 128, 128); ida scudder grey*/
+        background-color: #a0a0a0;
+        /* background: linear-gradient(45deg, #858585, #565656); */
+        margin: 1rem;
+        border-radius: 15px;
+      }
+      .heading {
+        font-size: 4rem;
+        font-weight: 300;
+        color: rgb(74, 74, 74);
+      }
+      .remove-button {
+        transition: 0.2s ease all;
+        border-radius: 3px;
+        padding: 4px 8px;
+        border: 1px solid #909090;
+        background-color: #909090;
+        color: #fff;
+        font-weight: 700;
+      }
+      .remove-button:hover {
+        transition: 0.2s ease all;
+        background-color: rgb(255, 0, 0);
+        color: #fff;
+        border: 1px solid #ff0000;
+      }
+      .remove-button-column {
+        text-align: center;
+      }
+      .datepicker-container {
+        text-align: center;
+        margin: 3rem auto;
+        font-size: large;
+      }
+      input[type="date"] {
+        height: 5rem;
+        width: 17rem;
+        padding: 1rem;
+      }
+      #filterButton {
+        transition: 0.2s ease all;
+        border-radius: 8px;
+        padding: 4px 8px;
+        border: 1px solid #909090;
+        background-color: #909090;
+        color: #fff;
+        font-weight: 700;
+        height: 5rem;
+        width: 10rem;
+        margin-left: 2rem;
+        margin-right: 2rem;
+      }
+
+      #filterButton:hover {
+        transition: 0.2s ease all;
+        background-color: rgb(42, 193, 0);
+        color: rgb(255, 255, 255);
+        border: 1px solid rgb(42, 193, 0);
+      }
+      td,
+      th,
+      tr {
+        font-size: 1.7rem;
+      }
+      table {
+        margin-top: 3rem;
+      }
+
+      #noAbsenteesMsg {
+        text-align: center;
+        font-size: 3rem;
+        color: #f00;
+        font-weight: 600;
+      }
+      .downloadExcelButton {
+        transition: 0.2s ease all;
+        padding: 6px;
+        border: 1px solid #909090;
+        background-color: #909090;
+        color: #fff;
+        font-weight: 700;
+        height: 7rem;
+        width: 25rem;
+        border-radius: 10px;
+      }
+      .downloadExcelButton:hover {
+        transition: 0.2s ease all;
+        background-color: rgb(42, 193, 0);
+        color: rgb(255, 255, 255);
+        border: 1px solid rgb(42, 193, 0);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 
+      all the javascript inside the ejs file must enclosed within <% %> 
+    -->
+    <div class="title-container">
+      <div class="title"><p class="heading">Download Attendance Sheet</p></div>
+    </div>
+
+    <div class="datepicker-container">
+      <!-- Date picker for filtering -->
+      <input type="date" id="filterDate" name="filterDate" />
+
+      <!-- Button to trigger filtering -->
+      <button id="filterButton">Filter</button>
+    </div>
+    <div id="noAbsenteesMsg" style="display: none">No Absentees !</div>
+
+    <div class="container">
+      <table
+        id="attendance-table"
+        class="table table-bordered table-striped table-lg"
+      >
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Days Absent</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% studentList.forEach(student =>{ %>
+          <tr>
+            <th scope="row" class="lightFont"><%= student._id %></th>
+            <td class="lightFont"><%= student.name %></td>
+            <td class="dateCell"><b><%= student.absent %></b></td>
+            <td class="remove-button-column">
+              <form action="/remove" method="POST">
+                <input type="hidden" name="id" value="<%= student._id %>" />
+                <button class="remove-button" type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+
+          <% }) %>
+        </tbody>
+      </table>
+      <div class="datepicker-container">
+        <button class="downloadExcelButton" id="downloadExcelButton">
+          Download as Excel file
+        </button>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("filterButton")
+        .addEventListener("click", function () {
+          const filterDateInput = document.getElementById("filterDate").value;
+
+          // Format the selected date
+          const filterDate = formatDate(filterDateInput);
+
+          // Flag to track if any matches are found
+          let hasMatch = false;
+          const rows = document.querySelectorAll("tbody tr");
+
+          // Loop through each row
+          rows.forEach((row) => {
+            // Get the date from the row
+            const dateCell = row.querySelector(".dateCell").innerText;
+
+            // Compare the date with the selected date
+            if (dateCell === filterDate) {
+              // If the date matches, show the row
+              row.style.display = "table-row";
+              hasMatch = true;
+            } else {
+              // If the date doesn't match, hide the row
+              row.style.display = "none";
+            }
+          });
+          // If no matches are found, display "No absentees" message
+          if (!hasMatch) {
+            const noAbsenteesMsg = document.getElementById("noAbsenteesMsg");
+            noAbsenteesMsg.style.display = "block";
+          } else {
+            const noAbsenteesMsg = document.getElementById("noAbsenteesMsg");
+            noAbsenteesMsg.style.display = "none";
+          }
+        });
+
+      document.querySelectorAll(".remove-button").forEach((button) => {
+        button.addEventListener("click", function (event) {
+          event.preventDefault(); // Prevent the default form submission
+
+          const confirmation = confirm(
+            "Are you sure you want to remove this record?"
+          );
+          if (confirmation) {
+            const form = this.closest("form");
+            form.submit();
+          }
+        });
+      });
+
+      function formatDate(dateString) {
+        const [year, month, day] = dateString.split("-");
+        // eg: 13-04-24
+        return `${day}-${month}-${year}`;
+      }
+
+      /*
+
+code to download the rendered table as an excel sheet using SheetJS library
+
+*/
+
+      document
+        .getElementById("downloadExcelButton")
+        .addEventListener("click", function () {
+          // Get table element
+          var table = document.getElementById("attendance-table");
+
+          // Create empty array to store table data
+          var data = [];
+
+          // Iterate over table rows
+          for (var i = 0, row; (row = table.rows[i]); i++) {
+            // Create empty array to store row data
+            var rowData = [];
+
+            // Iterate over table cells in the row
+            for (var j = 0, cell; (cell = row.cells[j]); j++) {
+              // Skip the last cell (action column)
+              if (j === row.cells.length - 1) {
+                  continue;
+              }
+              // Add cell content to row data
+              rowData.push(cell.textContent.trim());
+            }
+
+            // Add row data to table data
+            data.push(rowData);
+          }
+
+          // Create a new Workbook
+          var wb = XLSX.utils.book_new();
+
+          // Add a Worksheet to the Workbook
+          var ws = XLSX.utils.aoa_to_sheet(data);
+
+          // Add the Worksheet to the Workbook
+          XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+          // Convert the Workbook to an Excel file
+          var excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+          // Create Blob containing Excel data
+          var blob = new Blob([excelBuffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          });
+
+          // Create anchor element to trigger download
+          var link = document.createElement("a");
+          link.href = window.URL.createObjectURL(blob);
+          link.download = "table_data.xlsx";
+
+          // Trigger download
+          link.click();
+        });
+    </script>
+  </body>
+</html>
+<!--
+
+  the action column contains a button with a hidden input which has its value set to the object id
+
+-->
